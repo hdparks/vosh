@@ -11,9 +11,21 @@
     </div>
     <div>
       <h2>Create New Goal</h2>
-      <label>Name</label><input type="text" v-model="newGoalName"/>
-      <label>Text</label><input type="text" v-model="newGoalText"/>
-      <button @click="createNewGoal">Send</button>
+      <div>
+        <label>Name</label><input type="text" v-model="newGoalName"/>
+      </div>
+      <div>
+        <label>Text</label><input type="text" v-model="newGoalDescription"/>
+      </div>
+      <div>
+        <label>Target Objective</label>
+        <select v-model="newGoalTargetObjectiveId">
+          <option v-for="objective in objectives" :key="objective.id" :value="objective.id">{{objective.name}}</option>
+        </select>
+      </div>
+      <div>
+        <button @click="createNewGoal">Send</button>
+      </div>
     </div>
     <h1>Action Plans</h1>
     <div v-for="plan in plans">
@@ -28,6 +40,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import type { GoalPostParams } from '~/server/api/goals.post';
+
 const {data:goals} = await useFetch<Goal[]>("/api/goals")
 const {data:plans} = await useFetch<Plan[]>("/api/plans")
 const {data:objectives} = await useFetch<Objective[]>("/api/objectives")
@@ -45,12 +59,14 @@ async function createNewObjective(){
 }
 
 const newGoalName = ref<string>()
-const newGoalText = ref<string>()
+const newGoalDescription = ref<string>()
+const newGoalTargetObjectiveId = ref<number>()
 
 async function createNewGoal(){
+  const newGoal:GoalPostParams = {name: newGoalName.value!, description: newGoalDescription.value!, targetObjectiveId:newGoalTargetObjectiveId.value!}
   const res = await $fetch<Goal[]>('/api/goals',{
     method: 'POST',
-    body: { name:newGoalName.value, text:newGoalText.value}
+    body: newGoal
   })
   goals.value?.push(...res)
   console.log("recieved:",res)
