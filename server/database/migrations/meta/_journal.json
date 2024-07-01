@@ -29,6 +29,27 @@
       "when": 1719608994356,
       "tag": "0003_unknown_silk_fever",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1719613310278,
+      "tag": "0004_shallow_boom_boom",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1719621221500,
+      "tag": "0005_worried_slyde",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1719761998936,
+      "tag": "0006_young_shaman",
+      "breakpoints": true
     }
   ]
 }

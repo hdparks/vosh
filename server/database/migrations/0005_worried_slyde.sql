@@ -1,0 +1,1 @@
+ALTER TABLE "objectives" ADD COLUMN "abilityScoreType" text NOT NULL DEFAULT 'Unknown';
