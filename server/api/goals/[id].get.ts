@@ -7,10 +7,11 @@ import { eq } from "drizzle-orm";
 export default defineEventHandler(async (event) => {
   const goalId = parseInt(getRouterParam(event, 'id')!)
   const db = drizzle(sql, { schema: schema })
-  const data = await db.query.goals.findMany({
+  const data = await db.query.goals.findFirst({
     where:eq(schema.goals.id, goalId),
     with: {
       plans: true,
+      logs: true,
     }
   })
   return data

@@ -1,6 +1,11 @@
 <template>
   <div v-if="quest">
     <QuestSummary :quest="quest"></QuestSummary>
+    <ul>
+      <li v-for="goal in quest.goals">
+        <GoalSummary :goal="goal"></GoalSummary>
+      </li>
+    </ul>
   </div>
 </template>
 <script setup lang="ts">
