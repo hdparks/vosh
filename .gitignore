@@ -94,3 +94,6 @@ sw.*
 
 # Vercel
 .vercel
+
+# Data, for fonts
+.data
