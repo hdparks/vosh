@@ -1,5 +1,5 @@
 import { InferInsertModel, InferSelectModel, SQL, relations, sql } from 'drizzle-orm'
-import { pgTable, text, serial, timestamp, date, integer, AnyPgColumn, time, numeric, real } from 'drizzle-orm/pg-core'
+import { pgTable, text, serial, timestamp, date, integer, AnyPgColumn, time, real } from 'drizzle-orm/pg-core'
 
 export type AbilityScoreType = "Strength" | "Dexterity" | "Constitution" | "Wisdom" | "Intelligence" | "Charisma"
 
@@ -28,8 +28,8 @@ export const goals = pgTable('goals', {
   fk_quest_goal: integer('fk_quest_goal').references(() => quests.id),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
   target: real('target').default(1).notNull(),
-  start: date('start').defaultNow().notNull(),
-  end: date('end').default(sql`CURRENT_DATE + interval '1 month'`)
+  start: date('start', {mode:'date'}).defaultNow().notNull(),
+  end: date('end', {mode:'date'}).default(sql`CURRENT_DATE + interval '1 month'`).notNull()
 })
 
 export const goalsRelations = relations(goals, ({one, many}) => ({
@@ -54,7 +54,7 @@ export const goalLogs = pgTable('goalLogs', {
   goalId: integer('goalId').references(() => goals.id).notNull(),
   value: real('value').notNull(),
   note: text('note'),
-  date: date('date').notNull(),
+  date: date('date', {mode:'date'}).notNull(),
 })
 
 export const goalLogsRelations = relations(goalLogs, ({one}) => ({
@@ -76,8 +76,8 @@ export const plans = pgTable('plans', {
   description: text('text').notNull(),
   fk_goal_plan: integer('fk_goal_plan').references(() => goals.id),
   createdAt: timestamp('createdAt').defaultNow().notNull(),
-  start: date('start').defaultNow().notNull(),
-  end: date('end').default(sql`CURRENT_DATE + interval '1 month'`).notNull(),
+  start: date('start', {mode:'date'}).defaultNow().notNull(),
+  end: date('end', {mode:'date'}).default(sql`CURRENT_DATE + interval '1 month'`).notNull(),
   frequency: text('frequency'),
 })
 
@@ -101,7 +101,7 @@ export const planLogs = pgTable('planLogs', {
   createdAt: timestamp('createdAt').defaultNow().notNull(),
   planId: integer('planId').references(() => plans.id).notNull(),
   note: text('note'),
-  date: date('date').notNull(),
+  date: date('date', {mode:'date'}).notNull(),
   duration: integer('duration'),
   start: time('start')
 })
