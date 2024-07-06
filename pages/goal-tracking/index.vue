@@ -1,17 +1,17 @@
 <template>
   <div class="size-full flex flex-row justify-center">
-    <div class="w-96 md:w-8/12 mt-10 ">
-      <div :style="{height:`${quoteHeight}px`}" style="transition: height 1s ease;" >
-        <div ref="quoteContainer" class="mb-5 relative stretch">
-          <h1 class="text-5xl font-['Lora'] font-extrabold">Success depends on</h1>
+    <div class="w-96 md:w-8/12 my-10 ">
+      <div class="mb-5 relative stretch">
+        <h1 class="text-5xl font-['Lora'] font-extrabold">Success depends on</h1>
+        <div :style="{height: `${quoteHeight}px`}" class="relative">
           <Transition name="fade">
-            <h1 v-show="quote == 1" class="text-5xl font-['Lora'] font-extrabold">forethought</h1>
+            <h1 ref="quote1" class="text-5xl font-['Lora'] font-extrabold absolute top-0 opacity-0">forethought</h1>
           </Transition>
           <Transition name="fade">
-            <h1 v-show="quote == 2" class="text-5xl font-['Lora'] font-extrabold">dispassionate calculation of probabilities</h1>
+            <h1 ref="quote2" class="text-5xl font-['Lora'] font-extrabold absolute top-0 opacity-0">dispassionate calculation of probabilities</h1>
           </Transition>
           <Transition name="fade">
-            <h1 v-show="quote == 3" class="text-5xl font-['Lora'] font-extrabold">accounting for every stray variable</h1>
+            <h1 ref="quote3" class="text-5xl font-['Lora'] font-extrabold absolute top-0 opacity-0">accounting for every stray variable</h1>
           </Transition>
         </div>
       </div>
@@ -41,22 +41,46 @@
           <div class="absolute" style="bottom:0; transform: translate(-40%, 100%);">{{toNiceDate(endDate)}}</div>
         </div>
       </div>
-      <div>
-        <Select v-model="logGoal">
-          <SelectItem v-for="goal in goals" :value="goal.name"></SelectItem>
-        </Select>
-        <Input type="number" v-model="logValue"></Input>
-        <Popover>
-          <PopoverTrigger as-child>
-            <Button variant="outline" class="justify-start text-left font-normal">
-              <CalendarIcon class="mr-2 h-4 w-4" />
-              {{ logDate ? toNiceDate(logDate) : "Select Date"}}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="flex w-auto flex-col gap-y-2 p-2">
-            <Calendar v-model="logDate"></Calendar>
-          </PopoverContent>
-        </Popover>
+      <div class="mt-40 w-80 mx-auto">
+        <div class="mb-4">
+          Track Goal Progress
+        </div>
+        <div class="flex flex-row justify-between items-center">
+          <Label>Goal</Label>
+          <Combobox v-model="logGoal" :items="goals ?? []" :filter-function="filterGoals">
+            <template #selected="{modelValue}">{{modelValue?.name ?? "Select Goal..."}}</template>
+            <template #item="{item}">
+              <div>{{item?.name}}</div>
+            </template>
+          </Combobox>
+        </div>
+
+        <div class="flex flex-row justify-between items-center">
+          <Label>Value</Label>
+          <Input class="w-[200px] inline-block" type="number" v-model="logValue"></Input>
+        </div>
+        
+        <div class="flex flex-row justify-between items-center">
+          <Label>Date</Label>
+          <Popover >
+            <PopoverTrigger as-child>
+              <Button variant="outline" class="w-[200px] justify-start text-left font-normal">
+                <CalendarIcon class="mr-2 h-4 w-4" />
+                {{ logDate ? toNiceDate(logDate.toDate(getLocalTimeZone())) : "Select Date"}}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="flex w-auto flex-col gap-y-2 p-2">
+              <Calendar v-model="logDate"></Calendar>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div>
+          <Label>Note (Optional)</Label>
+          <Textarea v-model="logNote" />
+        </div>
+        <div>
+          <Button @click="submitTrackingLog">Submit</Button>
+        </div>
       </div>
     </div>
   </div>   
@@ -66,24 +90,56 @@ import { useElementSize } from '@vueuse/core'
 import { addMonths, differenceInDays } from 'date-fns';
 import { startOfToday, } from 'date-fns';
 import { formatISOWithOptions, formatWithOptions } from 'date-fns/fp';
-import type { Goal } from '~/server/database/schema';
+import gsap from 'gsap';
+import { CalendarIcon } from 'lucide-vue-next';
+import { Button } from '~/components/ui/button';
+import { Calendar } from '~/components/ui/calendar';
+import Combobox from '~/components/ui/combobox/Combobox.vue';
+import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover';
+import type { Goal, GoalLogInsertParams } from '~/server/database/schema';
+import { type DateValue, getLocalTimeZone } from '@internationalized/date';
+import { Textarea } from '~/components/ui/textarea';
 const today = startOfToday()
 const startDate = ref<Date>(addMonths(startOfToday(),-1));
 const endDate = ref<Date>(addMonths(startOfToday(),1));
 const toIsoDate = formatISOWithOptions({representation: 'date'})
 const toNiceDate = formatWithOptions({},"M/d")
-const {data: goals} = useFetch<Goal[]>(`/api/goal-tracking/goals?start=${toIsoDate(startDate.value)}&end=${toIsoDate(endDate.value)}`)
-const quote = ref<number>(1)
-const quoteContainer = ref<HTMLDivElement>()
-const { height:quoteHeight } = useElementSize(quoteContainer)
+const {data: goals} = await useFetch<Goal[]>(`/api/goal-tracking/goals?start=${toIsoDate(startDate.value)}&end=${toIsoDate(endDate.value)}`)
+const quote1 = ref<HTMLDivElement>()
+const quote2 = ref<HTMLDivElement>()
+const quote3 = ref<HTMLDivElement>()
+const { height:quote1Height } = useElementSize(quote1)
+const { height:quote2Height } = useElementSize(quote2)
+const { height:quote3Height } = useElementSize(quote3)
+const quoteHeight = computed(() => Math.max(...[quote1Height.value, quote2Height.value, quote3Height.value]))
+
+const quotes = [quote1, quote2, quote3]
+const selectedQuote = ref<number>(-1)
+
 function cycleQuotes(){
-  quote.value = 1
+  selectedQuote.value = 0
   setTimeout(() => {
-    quote.value = 2
+    selectedQuote.value = 1
     setTimeout(() => {
-      quote.value = 3
+      selectedQuote.value = 2
     }, 3000)
   },3000)
+}
+watch(selectedQuote, () => {
+  quotes.forEach((q,i) => {
+    if(selectedQuote.value == i) {
+      fadeInQuote(q.value!)
+    } else {
+      fadeOutQuote(q.value!)
+    }
+  }) 
+})
+
+function fadeInQuote(div: HTMLDivElement){
+  gsap.fromTo(div,{top:-50, opacity:0},{top:0, opacity:1})
+}
+function fadeOutQuote(div: HTMLDivElement){
+  gsap.fromTo(div,{top:0, opacity:1},{top:50, opacity:0})
 }
 
 onMounted(() => {
@@ -97,19 +153,36 @@ function dateToPercent(date:Date): number {
   return (d/dTotal)
 }
 
-function goalProgress(goal:Goal): number {
-  
-}
-
 const goalRows = computed(() => goals.value?.map(goal => ({
   goal: goal,
   start: dateToPercent(goal.start),
   width: dateToPercent(goal.end ?? addMonths(endDate.value,1)) - dateToPercent(goal.start),
 })))
 
-const logDate = ref<Date>()
-const logGoal = ref<Goal>()
+const logDate = ref<DateValue>()
+const logGoal = ref<Goal|null>(null)
 const logValue = ref<number>()
+const logNote = ref<string>()
+
+function filterGoals(goals: Goal[], term:string) {
+  const lowerTerm = term.toLowerCase()
+  return goals.filter(goal => goal.name.toLowerCase().includes(lowerTerm) || goal.description.toLowerCase().includes(lowerTerm))
+}
+
+async function submitTrackingLog(){
+  const body: GoalLogInsertParams = {
+    date: logDate.value!.toDate(getLocalTimeZone()),
+    goalId: logGoal.value!.id,
+    value: logValue.value!,
+    note: logNote.value
+  }
+  console.log(body)
+  const res = await $fetch('/api/goal-tracking/goals', {
+    method:'POST',
+    body: body
+  })
+  console.log(res)
+}
 </script>
 <style scoped>
 .fade-enter-active,
@@ -133,7 +206,6 @@ const logValue = ref<number>()
   transform: translateY(20px);
 }
 
-.stretch {
-  transition: height 1s ease;
-}
+
+
 </style>
