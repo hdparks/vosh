@@ -22,7 +22,6 @@
     "drizzle-orm": "^0.31.2",
     "nuxt": "^3.12.2",
     "postcss": "^8.4.39",
-    "shadcn-nuxt": "^0.10.4",
     "tailwind": "^4.0.0",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.5.3",
@@ -30,16 +29,8 @@
     "vue-router": "^4.2.5"
   },
   "dependencies": {
-    "@unovis/ts": "^1.4.2",
-    "@unovis/vue": "^1.4.2",
     "@vercel/postgres": "^0.9.0",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.4.5",
-    "lucide-vue-next": "^0.400.0",
-    "radix-vue": "^1.9.0",
-    "tailwind-merge": "^2.3.0",
-    "tailwindcss-animate": "^1.0.7"
+    "dotenv": "^16.4.5"
   }
 }
