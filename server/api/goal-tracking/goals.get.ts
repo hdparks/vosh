@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
   const db = drizzle(sql, { schema: schema })
   const data = await db.query.goals.findMany({
     where: (goals, {and,gte,lte}) => and(gte(goals.end, startDate),lte(goals.start, endDate)),
+    orderBy: (goals) => goals.start,
     with: {
       plans: true,
       logs: {

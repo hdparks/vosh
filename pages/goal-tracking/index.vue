@@ -25,10 +25,11 @@
       </div>
       <div class="mt-10 relative grid grid-cols-3" >
         <template v-for="row in goalRows" >
-          <div>{{row.goal.name}}: {{toNiceDate(row.goal.start)}} - {{toNiceDate(row.goal.end ?? addMonths(endDate,1))}}</div>
-          <div class="col-span-2 h-4 hover:h-12 relative" style="transition: height 1s ease;">
-            <div class="bg-red-50 relative" :style="{left:`${row.start*100}%`, width:`${row.width*100}%`}" style="top:0; bottom:0;"> 
-            </div>
+          <div class="truncate"><span class="truncate">{{row.goal.name}}</span>: {{toNiceDate(row.goal.start)}} - {{toNiceDate(row.goal.end ?? addMonths(endDate,1))}}</div>
+          <div class="col-span-2 h-8 hover:h-12 relative" style="transition: height 0.3s ease;">
+            <div class="bg-red-50 absolute" :style="{left:`${row.start*100}%`, width:`${row.width*100}%`}" style="top:2px; bottom:2px;"></div>
+            <div class="bg-red-200 absolute top-0.5 bottom-0.5 min-w-px" :style="{left:`${row.start*100}%`, width:`${row.width*row.progress*100}%`}" ></div>
+            <div v-for="log in row.goal.logs" class="w-1 h-4 bg-slate-600 rounded absolute" :style="{left:`${dateToPercent(log.date)*100}%`}" style="top:50%; transform: translate(-50%, -50%);"></div>
           </div>
         </template>
         <div class="w-0.5 h-100 bg-slate-100 absolute" :style="{left:`${((dateToPercent(startDate)*2)+1)/3*100}%`}" style="top:0; bottom:0;" >
@@ -99,12 +100,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover
 import type { Goal, GoalLogInsertParams } from '~/server/database/schema';
 import { type DateValue, getLocalTimeZone } from '@internationalized/date';
 import { Textarea } from '~/components/ui/textarea';
+import { Input } from '~/components/ui/input';
+
 const today = startOfToday()
 const startDate = ref<Date>(addMonths(startOfToday(),-1));
 const endDate = ref<Date>(addMonths(startOfToday(),1));
 const toIsoDate = formatISOWithOptions({representation: 'date'})
 const toNiceDate = formatWithOptions({},"M/d")
-const {data: goals} = await useFetch<Goal[]>(`/api/goal-tracking/goals?start=${toIsoDate(startDate.value)}&end=${toIsoDate(endDate.value)}`)
+const {data: goals, refresh} = await useFetch<Goal[]>(`/api/goal-tracking/goals?start=${toIsoDate(startDate.value)}&end=${toIsoDate(endDate.value)}`)
 const quote1 = ref<HTMLDivElement>()
 const quote2 = ref<HTMLDivElement>()
 const quote3 = ref<HTMLDivElement>()
@@ -157,7 +160,16 @@ const goalRows = computed(() => goals.value?.map(goal => ({
   goal: goal,
   start: dateToPercent(goal.start),
   width: dateToPercent(goal.end ?? addMonths(endDate.value,1)) - dateToPercent(goal.start),
+  progress: getProgress(goal)
 })))
+function getProgress(goal:Goal): number{
+  // todo: handle task-based goals
+  const first = goal.logs[0]?.value
+  if (first == null) { return 0 }
+  const totalDistance = Math.abs(goal.target - first)
+  const nearestDistance = goal.logs.reduce((min,log) => Math.min(min, Math.abs(goal.target - log.value)),Number.POSITIVE_INFINITY)
+  return 1 - (nearestDistance / totalDistance)
+}
 
 const logDate = ref<DateValue>()
 const logGoal = ref<Goal|null>(null)
@@ -176,36 +188,11 @@ async function submitTrackingLog(){
     value: logValue.value!,
     note: logNote.value
   }
-  console.log(body)
   const res = await $fetch('/api/goal-tracking/goals', {
     method:'POST',
     body: body
   })
-  console.log(res)
+  refresh()
 }
+
 </script>
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 1s ease, transform 1s ease-out;
-}
-.fade-leave-active {
-  position: absolute;
-}
-
-.fade-enter-from{
-  opacity: 0;
-  transform: translateY(-20px);
-}
-.fade-enter-to, .fade-leave-from {
-  opacity: 1; 
-  transform: translateY();
-}
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-
-
-</style>
